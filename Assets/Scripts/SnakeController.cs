@@ -24,6 +24,10 @@ public class SnakeController : MonoBehaviour
 
     private Transform currentFood;
 
+
+    private List<Vector3> previousPositions = new List<Vector3>();
+
+
     private void Start()
     {
         // Создание головы
@@ -76,6 +80,19 @@ public class SnakeController : MonoBehaviour
         // Сохраняем поворот
         if (direction != lastDirection)
             turnPoints[prevPosition] = direction;
+
+
+        previousPositions.Insert(0, segments[0].position);
+
+        for (int i = 1; i < segments.Count; i++)
+        {
+            if (i < previousPositions.Count)
+                segments[i].position = previousPositions[i];
+        }
+
+
+
+
 
         // Перемещение тела
         for (int i = segments.Count - 1; i > 0; i--)
