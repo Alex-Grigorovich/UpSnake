@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class SnakeController : MonoBehaviour
 {
@@ -41,7 +42,17 @@ public class SnakeController : MonoBehaviour
 
     private void Update()
     {
-        if (isGameOver) return;
+
+        // Позволяем перезапуск при Game Over
+        if (isGameOver)
+        {
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            }
+
+            return; // Остальной код не выполняется при Game Over
+        }
 
         if (segments.Count == 0) return;
 
@@ -53,6 +64,8 @@ public class SnakeController : MonoBehaviour
             Move();
             moveTimer = 0f;
         }
+
+
     }
 
     void HandleInput()
@@ -223,6 +236,9 @@ public class SnakeController : MonoBehaviour
         Debug.Log("Game Over!"); // Можно заменить на UI сообщение
                                  // Если хочешь остановить игру полностью:
                                  // Time.timeScale = 0;
+
+        Debug.Log("Game Over! Нажми R для перезапуска.");
+
     }
 
 }
