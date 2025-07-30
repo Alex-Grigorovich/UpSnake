@@ -24,15 +24,16 @@ public class SnakeController : MonoBehaviour
 
     private Transform currentFood;
 
-
     private List<Vector3> previousPositions = new List<Vector3>();
 
+    private bool isGameOver = false;
 
     private void Start()
     {
         // Создание головы
         Transform segment = Instantiate(segmentPrefab, GridToWorld(gridPosition), Quaternion.identity).transform;
         segment.GetComponent<SpriteRenderer>().sprite = headRight;
+        segment.tag = "Snake";  // Устанавливаем тег для головы
         segments.Add(segment);
 
         SpawnFood();
@@ -40,6 +41,8 @@ public class SnakeController : MonoBehaviour
 
     private void Update()
     {
+        if (isGameOver) return;
+
         if (segments.Count == 0) return;
 
         HandleInput();
@@ -81,18 +84,7 @@ public class SnakeController : MonoBehaviour
         if (direction != lastDirection)
             turnPoints[prevPosition] = direction;
 
-
         previousPositions.Insert(0, segments[0].position);
-
-        for (int i = 1; i < segments.Count; i++)
-        {
-            if (i < previousPositions.Count)
-                segments[i].position = previousPositions[i];
-        }
-
-
-
-
 
         // Перемещение тела
         for (int i = segments.Count - 1; i > 0; i--)
@@ -102,6 +94,7 @@ public class SnakeController : MonoBehaviour
 
         segments[0].position = GridToWorld(gridPosition);
 
+        CheckSelfCollision();
         UpdateSprites();
         lastDirection = direction;
     }
@@ -111,7 +104,14 @@ public class SnakeController : MonoBehaviour
         // Создание нового сегмента на месте последнего
         Transform lastSegment = segments[segments.Count - 1];
         Transform newSegment = Instantiate(segmentPrefab, lastSegment.position, Quaternion.identity).transform;
+        newSegment.tag = "Snake"; // Устанавливаем тег для нового сегмента
+
+        // Добавляем компоненты Collider и Rigidbody
+       // AddColliders(newSegment);
+
         segments.Add(newSegment);
+
+        UpdateSegmentTags();
     }
 
     void SpawnFood()
@@ -179,8 +179,50 @@ public class SnakeController : MonoBehaviour
         return bodyHorizontal;
     }
 
+
     Vector3 GridToWorld(Vector2Int gridPos)
     {
         return new Vector3(gridPos.x, gridPos.y, 0);
     }
+
+
+    void UpdateSegmentTags()
+    {
+        for (int i = 0; i < segments.Count; i++)
+        {
+            if (i == 0)
+            {
+                segments[i].tag = "Head";
+            }
+            else
+            {
+                segments[i].tag = "Tail";
+            }
+        }
+    }
+
+    void CheckSelfCollision()
+    {
+        if (segments.Count <= 1) return;
+
+        Vector3 headPos = segments[0].position;
+
+        for (int i = 1; i < segments.Count; i++)
+        {
+            if (Vector3.Distance(headPos, segments[i].position) < 0.1f) // Порог на погрешность координат
+            {
+                GameOver();
+                break;
+            }
+        }
+    }
+
+    void GameOver()
+    {
+        isGameOver = true;
+        Debug.Log("Game Over!"); // Можно заменить на UI сообщение
+                                 // Если хочешь остановить игру полностью:
+                                 // Time.timeScale = 0;
+    }
+
 }
