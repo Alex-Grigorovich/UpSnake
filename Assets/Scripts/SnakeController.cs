@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static UnityEngine.Rendering.HableCurve;
 
 public class SnakeController : MonoBehaviour
 {
@@ -11,6 +12,10 @@ public class SnakeController : MonoBehaviour
     public Sprite bodyVertical, bodyHorizontal;
     public Sprite turnUL, turnUR, turnDL, turnDR;
     public Sprite tailUp, tailDown, tailLeft, tailRight;
+
+
+    public int gridWidth = 20;
+    public int gridHeight = 20;
 
     private List<Transform> segments = new List<Transform>();
     private Vector2Int direction = Vector2Int.right;
@@ -31,13 +36,18 @@ public class SnakeController : MonoBehaviour
 
     private void Start()
     {
+        gridPosition = new Vector2Int(gridWidth / 2, gridHeight / 2);
+
         // Создание головы
         Transform segment = Instantiate(segmentPrefab, GridToWorld(gridPosition), Quaternion.identity).transform;
         segment.GetComponent<SpriteRenderer>().sprite = headRight;
         segment.tag = "Snake";  // Устанавливаем тег для головы
         segments.Add(segment);
 
-        SpawnFood();
+        UpdateSegmentTags();
+         SpawnFood();
+
+        
     }
 
     private void Update()
@@ -110,6 +120,10 @@ public class SnakeController : MonoBehaviour
         CheckSelfCollision();
         UpdateSprites();
         lastDirection = direction;
+
+
+        CollisionObstacle();
+
     }
 
     void Grow()
@@ -129,8 +143,45 @@ public class SnakeController : MonoBehaviour
 
     void SpawnFood()
     {
-        Vector2Int foodPos = new Vector2Int(Random.Range(0, 20), Random.Range(0, 20));
+        BoxCollider2D foodArea = GameObject.Find("FoodArea")?.GetComponent<BoxCollider2D>();
+
+        if (foodArea == null)
+        {
+            Debug.LogError("Не найден FoodArea с BoxCollider2D!");
+            return;
+        }
+
+        Bounds bounds = foodArea.bounds;
+
+        int minX = Mathf.CeilToInt(bounds.min.x);
+        int maxX = Mathf.FloorToInt(bounds.max.x);
+        int minY = Mathf.CeilToInt(bounds.min.y);
+        int maxY = Mathf.FloorToInt(bounds.max.y);
+
+        Vector2Int foodPos;
+
+        int attempts = 100; // защита от бесконечного цикла
+        do
+        {
+            foodPos = new Vector2Int(
+                Random.Range(minX, maxX + 1), // Добавляем +1, чтобы границы включали maxX
+                Random.Range(minY, maxY + 1)  // То же самое для maxY
+            );
+            attempts--;
+        }
+        while (IsPositionOccupied(foodPos) && attempts > 0);
+
         currentFood = Instantiate(foodPrefab, GridToWorld(foodPos), Quaternion.identity).transform;
+    }
+
+    bool IsPositionOccupied(Vector2Int pos)
+    {
+        foreach (Transform segment in segments)
+        {
+            if (GridToWorld(pos) == segment.position)
+                return true;
+        }
+        return false;
     }
 
     void UpdateSprites()
@@ -206,10 +257,31 @@ public class SnakeController : MonoBehaviour
             if (i == 0)
             {
                 segments[i].tag = "Head";
+
+
+                Rigidbody2D rb = segments[i].gameObject.GetComponent<Rigidbody2D>();
+                if (rb == null)
+                {
+                    rb = segments[i].gameObject.AddComponent<Rigidbody2D>();
+                }
+
+                rb.bodyType = RigidbodyType2D.Kinematic;
+                rb.simulated = true;
+
+                BoxCollider2D collider = segments[i].gameObject.GetComponent<BoxCollider2D>();
+                if (collider == null)
+                {
+                    collider = segments[i].gameObject.AddComponent<BoxCollider2D>();
+                }
+
+                collider.isTrigger = true;
+
             }
             else
             {
                 segments[i].tag = "Tail";
+
+              
             }
         }
     }
@@ -224,8 +296,12 @@ public class SnakeController : MonoBehaviour
         {
             if (Vector3.Distance(headPos, segments[i].position) < 0.1f) // Порог на погрешность координат
             {
+
                 GameOver();
                 break;
+
+
+
             }
         }
     }
@@ -240,5 +316,24 @@ public class SnakeController : MonoBehaviour
         Debug.Log("Game Over! Нажми R для перезапуска.");
 
     }
+
+
+
+    private void CollisionObstacle()
+    {
+        foreach (GameObject obstacle in GameObject.FindGameObjectsWithTag("Obstacle"))
+        {
+            if (Vector3.Distance(segments[0].position, obstacle.transform.position) < 0.5f)
+            {
+                Debug.Log("Столкновение с препятствием");
+                GameOver();
+                break;
+            }
+        }
+    }
+
+
+    
+
 
 }

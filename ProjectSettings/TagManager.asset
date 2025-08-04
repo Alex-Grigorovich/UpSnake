@@ -8,6 +8,9 @@ TagManager:
   - Tail
   - Snake
   - Head
+  - Obstacle
+  - 'FoodArea '
+  - FoodArea
   layers:
   - Default
   - TransparentFX
