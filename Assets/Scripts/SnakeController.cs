@@ -13,26 +13,26 @@ public class SnakeController : MonoBehaviour
     public Sprite turnUL, turnUR, turnDL, turnDR;
     public Sprite tailUp, tailDown, tailLeft, tailRight;
 
-
     public int gridWidth = 20;
     public int gridHeight = 20;
+    public float moveInterval = 0.2f;
+
 
     private List<Transform> segments = new List<Transform>();
+
     private Vector2Int direction = Vector2Int.right;
     private Vector2Int lastDirection = Vector2Int.right;
 
-    public float moveInterval = 0.2f;
     private float moveTimer;
 
     private Vector2Int gridPosition = new Vector2Int(10, 10);
-
     private Dictionary<Vector2Int, Vector2Int> turnPoints = new Dictionary<Vector2Int, Vector2Int>();
-
     private Transform currentFood;
-
     private List<Vector3> previousPositions = new List<Vector3>();
-
     private bool isGameOver = false;
+
+    
+    
 
     private void Start()
     {
@@ -45,9 +45,9 @@ public class SnakeController : MonoBehaviour
         segments.Add(segment);
 
         UpdateSegmentTags();
-         SpawnFood();
+        SpawnFood();
 
-        
+
     }
 
     private void Update()
@@ -95,15 +95,28 @@ public class SnakeController : MonoBehaviour
         Vector2Int prevPosition = gridPosition;
         gridPosition += direction;
 
-        // Проверка на еду
-        if (currentFood != null && Vector2.Distance(GridToWorld(gridPosition), currentFood.position) < 0.1f)
+        Vector3 worldHeadPos = GridToWorld(gridPosition);
+
+        // === Проверка выхода за границы камеры ===
+        Vector3 camMin = Camera.main.ViewportToWorldPoint(new Vector3(0, 0, 0));
+        Vector3 camMax = Camera.main.ViewportToWorldPoint(new Vector3(1, 1, 0));
+
+        if (worldHeadPos.x < camMin.x || worldHeadPos.x > camMax.x ||
+            worldHeadPos.y < camMin.y || worldHeadPos.y > camMax.y)
+        {
+            Debug.Log("Змея вышла за границы камеры!");
+            GameOver();
+            return;
+        }
+
+        // === Проверка на еду ===
+        if (currentFood != null && Vector2.Distance(worldHeadPos, currentFood.position) < 0.1f)
         {
             Destroy(currentFood.gameObject);
             Grow();
             SpawnFood();
         }
 
-        // Сохраняем поворот
         if (direction != lastDirection)
             turnPoints[prevPosition] = direction;
 
@@ -115,15 +128,13 @@ public class SnakeController : MonoBehaviour
             segments[i].position = segments[i - 1].position;
         }
 
-        segments[0].position = GridToWorld(gridPosition);
+        segments[0].position = worldHeadPos;
 
         CheckSelfCollision();
         UpdateSprites();
         lastDirection = direction;
 
-
         CollisionObstacle();
-
     }
 
     void Grow()
@@ -134,7 +145,7 @@ public class SnakeController : MonoBehaviour
         newSegment.tag = "Snake"; // Устанавливаем тег для нового сегмента
 
         // Добавляем компоненты Collider и Rigidbody
-       // AddColliders(newSegment);
+        // AddColliders(newSegment);
 
         segments.Add(newSegment);
 
@@ -281,7 +292,7 @@ public class SnakeController : MonoBehaviour
             {
                 segments[i].tag = "Tail";
 
-              
+
             }
         }
     }
@@ -331,9 +342,5 @@ public class SnakeController : MonoBehaviour
             }
         }
     }
-
-
-    
-
 
 }
