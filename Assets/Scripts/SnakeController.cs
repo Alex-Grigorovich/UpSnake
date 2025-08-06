@@ -31,12 +31,21 @@ public class SnakeController : MonoBehaviour
     private List<Vector3> previousPositions = new List<Vector3>();
     private bool isGameOver = false;
 
-    
-    
+
+
+    public GameObject gameOverTextUI;
+    public GameObject restartButtonUI;
+
 
     private void Start()
     {
         gridPosition = new Vector2Int(gridWidth / 2, gridHeight / 2);
+
+        if (gameOverTextUI != null)
+            gameOverTextUI.SetActive(false); // Скрыть текст
+
+        if (restartButtonUI != null)
+            restartButtonUI.SetActive(false);
 
         // Создание головы
         Transform segment = Instantiate(segmentPrefab, GridToWorld(gridPosition), Quaternion.identity).transform;
@@ -56,11 +65,7 @@ public class SnakeController : MonoBehaviour
         // Позволяем перезапуск при Game Over
         if (isGameOver)
         {
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-            }
-
+           
             return; // Остальной код не выполняется при Game Over
         }
 
@@ -324,10 +329,23 @@ public class SnakeController : MonoBehaviour
                                  // Если хочешь остановить игру полностью:
                                  // Time.timeScale = 0;
 
+        if (gameOverTextUI != null)
+            gameOverTextUI.SetActive(true); // Показать текст
+
+        if (restartButtonUI != null)
+            restartButtonUI.SetActive(true);
+
         Debug.Log("Game Over! Нажми R для перезапуска.");
 
     }
 
+    public void RestartGame()
+    {
+        if (gameOverTextUI != null)
+            gameOverTextUI.SetActive(false); // Скрыть UI текст
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
 
 
     private void CollisionObstacle()
