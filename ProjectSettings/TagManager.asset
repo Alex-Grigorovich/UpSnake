@@ -10,7 +10,7 @@ TagManager:
   - Head
   - Obstacle
   - 'FoodArea '
-  - FoodArea
+  - TopBoundary
   layers:
   - Default
   - TransparentFX

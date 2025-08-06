@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using static UnityEngine.Rendering.HableCurve;
 
 public class SnakeController : MonoBehaviour
@@ -14,7 +15,7 @@ public class SnakeController : MonoBehaviour
     public Sprite tailUp, tailDown, tailLeft, tailRight;
 
     public int gridWidth = 20;
-    public int gridHeight = 20;
+    public int gridHeight = 18;
     public float moveInterval = 0.2f;
 
 
@@ -37,9 +38,35 @@ public class SnakeController : MonoBehaviour
     public GameObject restartButtonUI;
 
 
+    // UI
+    public Text scoreTextUI;
+
+    // Очки
+    private int score = 0;
+
+    public int uiOffset = 1;
+
+
+
+    private GameObject topBoundary;
+    private BoxCollider2D topCollider;
+
+
+
     private void Start()
     {
-        gridPosition = new Vector2Int(gridWidth / 2, gridHeight / 2);
+
+        topBoundary = GameObject.FindGameObjectWithTag("TopBoundary");
+        if (topBoundary != null)
+        {
+            topCollider = topBoundary.GetComponent<BoxCollider2D>();
+        }
+        else
+        {
+            Debug.LogWarning("TopBoundary не найден в Start!");
+        }
+
+        gridPosition = new Vector2Int(gridWidth / 2, 2);
 
         if (gameOverTextUI != null)
             gameOverTextUI.SetActive(false); // Скрыть текст
@@ -56,7 +83,8 @@ public class SnakeController : MonoBehaviour
         UpdateSegmentTags();
         SpawnFood();
 
-
+        score = 0;
+        UpdateScoreUI();
     }
 
     private void Update()
@@ -97,28 +125,55 @@ public class SnakeController : MonoBehaviour
 
     void Move()
     {
+        
+
+
+
         Vector2Int prevPosition = gridPosition;
         gridPosition += direction;
 
         Vector3 worldHeadPos = GridToWorld(gridPosition);
+
+
+        if (topCollider != null)
+        {
+            Bounds topBounds = topCollider.bounds;
+
+            // Получим мировые координаты предполагаемой новой позиции головы
+            Vector3 nextWorldPosition = GridToWorld(gridPosition);
+
+            // Если позиция головы в пределах TopBoundary по X и Y — Game Over
+            if (topBounds.Contains(nextWorldPosition))
+            {
+                Debug.Log("Попытка пересечения TopBoundary! Game Over.");
+                GameOver();
+                return;
+            }
+        }
+
+
+
+        CollisionObstacle();
 
         // === Проверка выхода за границы камеры ===
         Vector3 camMin = Camera.main.ViewportToWorldPoint(new Vector3(0, 0, 0));
         Vector3 camMax = Camera.main.ViewportToWorldPoint(new Vector3(1, 1, 0));
 
         if (worldHeadPos.x < camMin.x || worldHeadPos.x > camMax.x ||
-            worldHeadPos.y < camMin.y || worldHeadPos.y > camMax.y)
+            worldHeadPos.y < camMin.y || worldHeadPos.y > camMax.y )
         {
             Debug.Log("Змея вышла за границы камеры!");
             GameOver();
             return;
         }
 
+
         // === Проверка на еду ===
         if (currentFood != null && Vector2.Distance(worldHeadPos, currentFood.position) < 0.1f)
         {
             Destroy(currentFood.gameObject);
             Grow();
+            AddScore(50); 
             SpawnFood();
         }
 
@@ -139,7 +194,7 @@ public class SnakeController : MonoBehaviour
         UpdateSprites();
         lastDirection = direction;
 
-        CollisionObstacle();
+        
     }
 
     void Grow()
@@ -198,6 +253,12 @@ public class SnakeController : MonoBehaviour
                 return true;
         }
         return false;
+    }
+
+    void AddScore(int amount)
+    {
+        score += amount;
+        UpdateScoreUI();
     }
 
     void UpdateSprites()
@@ -322,6 +383,12 @@ public class SnakeController : MonoBehaviour
         }
     }
 
+    void UpdateScoreUI()
+    {
+        if (scoreTextUI != null)
+            scoreTextUI.text = "Score: " + score.ToString() + " Coins: 0";
+    }
+
     void GameOver()
     {
         isGameOver = true;
@@ -352,12 +419,23 @@ public class SnakeController : MonoBehaviour
     {
         foreach (GameObject obstacle in GameObject.FindGameObjectsWithTag("Obstacle"))
         {
-            if (Vector3.Distance(segments[0].position, obstacle.transform.position) < 0.5f)
+            if (Vector3.Distance(segments[0].position, obstacle.transform.position) < 1f)
             {
                 Debug.Log("Столкновение с препятствием");
                 GameOver();
                 break;
             }
+        }
+
+    }
+
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("TopBoundary"))
+        {
+            Debug.Log("Столкновение с TopBoundary через OnTriggerEnter2D!");
+            GameOver();
         }
     }
 
