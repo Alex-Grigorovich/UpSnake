@@ -15,7 +15,7 @@ public class SnakeController : MonoBehaviour
     public Sprite tailUp, tailDown, tailLeft, tailRight;
 
     public int gridWidth = 20;
-    public int gridHeight = 18;
+    public int gridHeight = 20;
     public float moveInterval = 0.2f;
 
 
@@ -428,8 +428,6 @@ public class SnakeController : MonoBehaviour
         }
 
     }
-
-
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("TopBoundary"))
@@ -439,4 +437,5 @@ public class SnakeController : MonoBehaviour
         }
     }
 
+    public bool IsGameOver => isGameOver;
 }
